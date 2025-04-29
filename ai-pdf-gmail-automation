@@ -1,0 +1,189 @@
+{
+  "name": "OpenAI chatbot to PDF via Gmail",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "id": "899fcd21-44e4-4080-b95d-594474c6731e",
+      "name": "When chat message received",
+      "webhookId": "8f921721-e1e6-41b5-8613-eaf5bb5a0201"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "..."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [220, 0],
+      "id": "aa8a5310-4553-4e2d-84e5-0f0b600b60ca",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [200, 340],
+      "id": "8f6d9121-452c-4ed3-b24c-f4d3a5f51958",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "AfricaStay_KB",
+        "toolDescription": "Use the data to accurately answer all questions as well as generate quotes",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "africastaykb2",
+          "mode": "list",
+          "cachedResultName": "africastaykb2"
+        },
+        "topK": 100,
+        "includeDocumentMetadata": false,
+        "options": {
+          "pineconeNamespace": "AfricaStay KB"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1,
+      "position": [460, 220],
+      "id": "af492373-9858-4e28-bbb8-eadf37239779",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "hjIniuPDp2KS6lic",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [500, 360],
+      "id": "a6585a32-72d8-4609-9f1e-bf6e712b1af0",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "1PbdQzVHa6cPnR7y",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini-2024-07-18",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini-2024-07-18"
+        },
+        "options": {
+          "maxTokens": 500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [60, 220],
+      "id": "9e1a3c3a-2d42-4d3c-8e15-c8c9a93ec271",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1PbdQzVHa6cPnR7y",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [\n  {\n    json: {\n      clientName: $json.clientName || 'Client',\n      destination: $json.destination || 'Zanzibar',\n      travelDates: $json.travelDates || 'TBD',\n      price: $json.price || 'TBD',\n      highlights: $json.highlights || 'Beach, Relaxation, Activities',\n      packageName: $json.packageName || 'Standard Tropical Escape',\n      email: $json.email || 'client@example.com'\n    }\n  }\n];"
+      },
+      "name": "Prepare PDF Content",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [640, 0],
+      "id": "prepare-pdf-content"
+    },
+    {
+      "parameters": {
+        "functionCode": "const PDFDocument = require('pdfkit');\nconst fs = require('fs');\nconst path = require('path');\n\nconst doc = new PDFDocument();\nconst filePath = `/tmp/quote_${Date.now()}.pdf`;\n\nconst { clientName, destination, travelDates, price, highlights, packageName } = items[0].json;\n\nconst writeStream = fs.createWriteStream(filePath);\ndoc.pipe(writeStream);\n\ndoc.fontSize(20).text(`Holiday Quote for ${clientName}`, { align: 'center' });\ndoc.moveDown();\ndoc.fontSize(14).text(`Package: ${packageName}`);\ndoc.text(`Destination: ${destination}`);\ndoc.text(`Travel Dates: ${travelDates}`);\ndoc.text(`Price: ${price}`);\ndoc.moveDown();\ndoc.text(`Highlights:`, { underline: true });\ndoc.text(highlights);\n\ndoc.end();\n\nawait new Promise((resolve) => writeStream.on('finish', resolve));\n\nreturn [{\n  binary: {\n    data: await fs.promises.readFile(filePath)\n  },\n  json: { filename: `Quote_${clientName}_${Date.now()}.pdf`, email: items[0].json.email }\n}];"
+      },
+      "name": "Generate PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [860, 0],
+      "id": "generate-pdf"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/tmp/quote_{{ $json.clientName }}_{{ $json.email }}.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1080, 0],
+      "id": "write-pdf-to-disk",
+      "name": "Write PDF to Disk"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "Your Custom AfricaStay Holiday Quote",
+        "message": "Attached is your personalized quote based on our conversation. Let us know if you'd like to proceed!",
+        "attachments": ["data"]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1200, 0],
+      "id": "send-gmail-with-pdf",
+      "name": "Send Quote Email",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KWiZgMquEGNVvUMN",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "Simple Memory": {
+      "ai_memory": [[{ "node": "AI Agent", "type": "ai_memory", "index": 0 }]]
+    },
+    "Pinecone Vector Store": {
+      "ai_tool": [[{ "node": "AI Agent", "type": "ai_tool", "index": 0 }]]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [[{ "node": "Pinecone Vector Store", "type": "ai_embedding", "index": 0 }]]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "AI Agent": {
+      "main": [[{ "node": "Prepare PDF Content", "type": "main", "index": 0 }]]
+    },
+    "Prepare PDF Content": {
+      "main": [[{ "node": "Generate PDF", "type": "main", "index": 0 }]]
+    },
+    "Generate PDF": {
+      "main": [[{ "node": "Write PDF to Disk", "type": "main", "index": 0 }]]
+    },
+    "Write PDF to Disk": {
+      "main": [[{ "node": "Send Quote Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false
+}

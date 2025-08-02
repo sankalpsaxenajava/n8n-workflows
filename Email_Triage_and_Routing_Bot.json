@@ -1,0 +1,64 @@
+{
+  "name": "Email Triage and Routing Bot",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 1,
+      "position": [
+        100,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "/* Classify email intent using AI */"
+      },
+      "name": "AI Classifier",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://form.monday.com",
+        "method": "GET"
+      },
+      "name": "Redirect to Monday Form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        500,
+        200
+      ]
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Classifier": {
+      "main": [
+        [
+          {
+            "node": "Redirect to Monday Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

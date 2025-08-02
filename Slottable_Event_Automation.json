@@ -1,0 +1,41 @@
+{
+  "name": "Slottable Event Automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Slottable Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.slottable.com/status",
+        "method": "GET"
+      },
+      "name": "Check Registration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Slottable Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Registration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

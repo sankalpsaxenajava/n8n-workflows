@@ -1,0 +1,155 @@
+[
+  {
+    "name": "Email Triage & Routing Bot",
+    "nodes": [
+      {
+        "parameters": {},
+        "name": "Gmail Trigger",
+        "type": "n8n-nodes-base.gmailTrigger",
+        "typeVersion": 1,
+        "position": [
+          250,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "return items.map(item => {\n  const subject = item.json.subject || '';\n  if (subject.includes('billing')) item.json.intent = 'Billing';\n  else if (subject.includes('membership')) item.json.intent = 'Membership Mod';\n  else item.json.intent = 'General Help';\n  return item;\n});"
+        },
+        "name": "Classify Intent",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          450,
+          300
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{$json[\"intent\"]}}",
+                "value2": "Billing"
+              }
+            ]
+          }
+        },
+        "name": "Is Billing?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          650,
+          200
+        ]
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "string": [
+              {
+                "value1": "={{$json[\"intent\"]}}",
+                "value2": "Membership Mod"
+              }
+            ]
+          }
+        },
+        "name": "Is Membership Mod?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          650,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "genericCredentialType",
+          "url": "https://monday.com/forms/help-form",
+          "options": {}
+        },
+        "name": "Redirect to Help Form",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          850,
+          600
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "genericCredentialType",
+          "url": "https://keep.com/modification-form",
+          "options": {}
+        },
+        "name": "Redirect to Keep Form",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          850,
+          400
+        ]
+      },
+      {
+        "parameters": {
+          "authentication": "genericCredentialType",
+          "url": "https://internal.billing.bot",
+          "options": {}
+        },
+        "name": "Trigger Billing Bot",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 1,
+        "position": [
+          850,
+          200
+        ]
+      }
+    ],
+    "connections": {
+      "Gmail Trigger": {
+        "main": [
+          [
+            "Classify Intent"
+          ]
+        ]
+      },
+      "Classify Intent": {
+        "main": [
+          [
+            "Is Billing?",
+            "Is Membership Mod?"
+          ]
+        ]
+      },
+      "Is Billing?": {
+        "main": [
+          [
+            {
+              "node": "Trigger Billing Bot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Is Membership Mod?": {
+        "main": [
+          [
+            {
+              "node": "Redirect to Keep Form",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Redirect to Help Form",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  }
+]

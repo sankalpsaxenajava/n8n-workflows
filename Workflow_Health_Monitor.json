@@ -1,0 +1,41 @@
+{
+  "name": "Workflow Health Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "custom",
+        "cronExpression": "0 9 * * *"
+      },
+      "name": "Daily Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {},
+      "name": "Check Status",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Daily Cron": {
+      "main": [
+        [
+          {
+            "node": "Check Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

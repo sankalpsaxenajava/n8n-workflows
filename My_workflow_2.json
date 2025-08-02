@@ -1,0 +1,219 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1y840dxj6HClrh-bYx7GZ16d-1dxVozXeC8UEZyxf7mg",
+          "mode": "list",
+          "cachedResultName": "Testing Shipping Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1y840dxj6HClrh-bYx7GZ16d-1dxVozXeC8UEZyxf7mg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Incoming_emails",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "fec42f78-8910-4cc0-8d5a-ba05d210e4a0",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        900,
+        0
+      ],
+      "typeVersion": 4.5,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "VjBqCry3MjCvzP8Q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            },
+            {}
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "Label_36975995617291462"
+          ]
+        }
+      },
+      "id": "1a40ca2c-02c6-4245-9934-d434287b9963",
+      "name": "Gmail Trigger1",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "position": [
+        0,
+        0
+      ],
+      "notesInFlow": true,
+      "typeVersion": 1.2,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XKknVuiTV5HjHSE1",
+          "name": "Gmail account 4"
+        }
+      },
+      "notes": "Gmail Trigger\n"
+    },
+    {
+      "parameters": {
+        "inputText": "=Subject: {{ $json.Subject }}\nEmail body: {{ $json.snippet }}",
+        "categories": {
+          "categories": [
+            {
+              "category": "Shipping",
+              "description": "This is any email that is coming from clients that are asking question about shipping or placing orders for shipping.\t\t"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textClassifier",
+      "typeVersion": 1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "11ea395d-26e1-44f2-b43a-e9b4a95f7e32",
+      "name": "Text Classifier"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        160
+      ],
+      "id": "0c56673b-d045-4165-b531-11415575180a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "1PbdQzVHa6cPnR7y",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_36975995617291462"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        620,
+        0
+      ],
+      "id": "24a97533-1378-404e-81c8-654c0e6f7aa8",
+      "name": "Shipping1",
+      "webhookId": "f62f42f1-9d69-44da-af10-2118e8883d84",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "XKknVuiTV5HjHSE1",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = [];\nfor (const item of $input.all()) {\n  const body = item.json.payload?.parts?.[0]?.body?.data || '';\n  const decoded = Buffer.from(body, 'base64').toString('utf8');\n  const lines = decoded.split('\\n').map(line => line.trim()).filter(line => line);\n  const data = {};\n  for (const line of lines) {\n    const [key, ...rest] = line.split(':');\n    if (key && rest.length) {\n      data[key.trim().toLowerCase().replace(/ /g, '_')] = rest.join(':').trim();\n    }\n  }\n  items.push({ json: data });\n}\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        0
+      ],
+      "id": "ff1da515-cea5-4e67-a3a7-d33c26417cc6",
+      "name": "Code1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Text Classifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Classifier": {
+      "main": [
+        [
+          {
+            "node": "Shipping1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shipping1": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2d0573dc-c3ee-4db2-a409-330652a1b7e8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dcd2382d10c3d1fb800629e8734694235c82a1c989279291fff6f870f86b1825"
+  },
+  "id": "KAJeKcO3gT2txVU7",
+  "tags": []
+}

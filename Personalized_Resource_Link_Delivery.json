@@ -1,0 +1,41 @@
+{
+  "name": "Personalized Resource Link Delivery",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Resource Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://coachsimple.com/resources",
+        "method": "GET"
+      },
+      "name": "Fetch Resource",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Resource Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Resource",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

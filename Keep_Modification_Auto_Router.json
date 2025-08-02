@@ -1,0 +1,41 @@
+{
+  "name": "Keep Modification Auto-Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Trigger via Keyword",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://keepcrm.com/modification",
+        "method": "POST"
+      },
+      "name": "Send Mod Form",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger via Keyword": {
+      "main": [
+        [
+          {
+            "node": "Send Mod Form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

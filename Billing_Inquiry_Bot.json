@@ -1,0 +1,41 @@
+{
+  "name": "Billing Inquiry Bot",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Trigger from Triage",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.keepcrm.com/search",
+        "method": "GET"
+      },
+      "name": "Search Keep",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        300,
+        100
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger from Triage": {
+      "main": [
+        [
+          {
+            "node": "Search Keep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

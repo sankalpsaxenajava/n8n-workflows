@@ -1,0 +1,199 @@
+{
+  "name": "email_triage_billing_bot_outlook",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "name": "Email Trigger",
+      "type": "n8n-nodes-base.microsoftOutlookTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "de38e516-67ec-4dcb-a13a-7364a12564e7"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json[\"headers\"][\"reply-to\"]}}",
+              "operation": "contains",
+              "value2": "noreply@"
+            }
+          ]
+        }
+      },
+      "name": "Check Reply-To Pattern",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "id": "73b9bf0c-3282-4a52-adad-5365d1e59aeb"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "instruction": "Classify customer email intent as one of: General Help, Membership Modification, or Billing.",
+        "input": "Subject: {{$json[\"subject\"]}}\n\nBody:\n{{$json[\"body\"]}}",
+        "temperature": 0.2,
+        "top_p": 1,
+        "frequency_penalty": 0,
+        "presence_penalty": 0,
+        "max_tokens": 50
+      },
+      "name": "AI Intent Classifier (OpenAI)",
+      "type": "n8n-nodes-base.openAiText",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "id": "b557b5f1-7484-40e1-9a06-f96b572e525b"
+    },
+    {
+      "parameters": {
+        "functionCode": "\nconst body = $json[\"body\"];\nconst emailMatch = body.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-z]{2,}/);\nconst phoneMatch = body.match(/\\+?[0-9\\s\\-\\(\\)]{7,}/);\nreturn [{\n  json: {\n    email: emailMatch ? emailMatch[0] : \"\",\n    phone: phoneMatch ? phoneMatch[0] : \"\"\n  }\n}];\n"
+      },
+      "name": "Extract Email & Phone",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "id": "ba2fa6fe-c988-4f49-b8a2-2a69ffa5117f"
+    },
+    {
+      "parameters": {},
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "id": "2b1935d1-58c5-4382-9f5e-0aced43f3126"
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@example.com",
+        "toEmail": "={{$json[\"email\"]}}",
+        "subject": "Thanks for contacting us",
+        "text": "Hi there! Based on your message, please use the following form link to continue: [dynamic link based on intent]",
+        "options": {}
+      },
+      "name": "Send Auto Response",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ],
+      "id": "84464445-e458-43b0-b58f-0ba5f7fc3a95"
+    },
+    {
+      "parameters": {
+        "url": "https://api.monday.com/v2",
+        "options": {}
+      },
+      "name": "Log to Monday.com",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "id": "2f1525fa-d5f3-4086-a852-418a41a7be7d"
+    }
+  ],
+  "connections": {
+    "Email Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check Reply-To Pattern",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reply-To Pattern": {
+      "main": [
+        [
+          {
+            "node": "AI Intent Classifier (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Intent Classifier (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Extract Email & Phone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email & Phone": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Send Auto Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Auto Response": {
+      "main": [
+        [
+          {
+            "node": "Log to Monday.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0222ce50-1970-45e9-983a-827709f5f389",
+  "meta": {
+    "instanceId": "9b2d5081cf5b356e8fc5f1ae6bc06881dbda921f4de920cfc6f9ce14bb1bdbb8"
+  },
+  "id": "kuU5Ysm3UMu3pPEv",
+  "tags": []
+}
